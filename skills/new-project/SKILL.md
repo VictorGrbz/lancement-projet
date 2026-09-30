@@ -56,7 +56,7 @@ Wait for the user to validate or adjust the stack before continuing.
 
 ## 5. Target folder
 
-Ask where the project lives. Never choose the path yourself. Create the folder if it does not exist.
+Ask where the project lives. Never choose the path yourself. Create the folder if it does not exist. Use the absolute path from here on, and never write inside the plugin or skill folder.
 
 ## 6. Project settings
 
