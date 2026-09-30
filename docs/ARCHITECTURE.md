@@ -31,7 +31,6 @@ Principes de conception :
 ### 3.1 Skill `new-project`
 
 - **Rôle** : mener un cadrage guidé avec l'utilisateur, puis produire le PLAN.md du projet (fiche de cadrage + étapes).
-- **Source** : prototype interne `nouveau-projet.md` (commande) et les consignes d'interview de `chef-de-projet.md` (agent).
 - **Conservé** :
   - lancement du cadrage ; questions de contraintes (délai, budget, technique, type de projet) ;
   - question du dépôt Git dédié (nom demandé, jamais choisi seul ; public par défaut, signalé explicitement) ;
@@ -39,23 +38,20 @@ Principes de conception :
   - PLAN.md conforme au contrat du §5 (Cadrage produit, étapes avec objectif / fichiers / destination / fait quand, étape 0 d'init Git si dépôt dédié, section Vérification automatique avec hook PostToolUse proposé) ;
   - revue de cadrage (par l'agent `project-manager`) avant validation ;
   - si un PLAN.md existe déjà, présenter les modifications au lieu de l'écraser.
-- **Retiré** : lecture de dossiers de documents préalables propres à un utilisateur, fichier de contexte personnel, stockage objet et hébergement par défaut, choix mobile par défaut, `.gitignore` racine, tout le workflow de direction artistique, prénom, commande de mise à jour de mémoire, références à l'organisation interne du mainteneur. Le `.claude/settings.json` du projet n'impose ni `model` ni `effortLevel` : seul le hook de vérification est proposé, après validation.
+- **Réglages du projet** : le `.claude/settings.json` du projet cible n'impose ni `model` ni `effortLevel` ; seul le hook de vérification est proposé, après validation. Aucun hébergement, stockage ni stack par défaut.
 - **Fichiers d'appui** : `interview.md` (interview en 4 sections : vision, 2 à 3 cas d'usage en histoires courtes, critères de succès mesurables avec refus du non vérifiable, hors périmètre avec 2 à 3 exclusions proposées ; relance sur le vague ; mode brouillon ; jamais de stack pendant l'interview) et `plan-template.md` (contrat du PLAN.md).
 - **Invocation** : manuelle uniquement (`disable-model-invocation: true`). Il écrit des fichiers, effectue des recherches web et pose de nombreuses questions : il ne doit jamais partir sur une phrase anodine.
 
 ### 3.2 Skill `run-step`
 
 - **Rôle** : lire le PLAN.md, prendre la première étape non faite, l'exécuter, vérifier son critère de « fait », la marquer comme faite, puis proposer un commit.
-- **Source** : aucune commande existante. Il formalise le rôle d'« exécutant » de la méthode (nouveau composant, contrat de PLAN.md du §5).
-- **Retiré** : sans objet (création).
 - **Règles** : une seule étape par appel ; si le critère de fait n'est pas vérifiable, arrêt et question ; jamais d'enchaînement sur l'étape suivante sans validation ; ne modifie que le PLAN.md (statut) et les fichiers de l'étape ; termine en **suggérant** `/lancement-projet:commit` (texte, pas d'appel : un skill manuel ne peut pas en lancer un autre).
 - **Invocation** : manuelle uniquement. Il modifie le projet ; un déclenchement sur une phrase du type « on en est où ? » serait dangereux.
 
 ### 3.3 Skill `commit`
 
 - **Rôle** : enregistrer le travail en un commit propre puis, séparément, le pousser, avec deux validations distinctes.
-- **Source** : prototype interne `commit.md` (commande sans frontmatter, 11 étapes en 3 blocs : préalable, commit, push).
-- **Retiré** : le prototype est déjà presque générique. On retire la langue imposée du message : il suit la langue et le style des commits existants (voir §8).
+- **Langue** : le message suit la langue et le style des commits existants (voir §8).
 - **Garde-fous conservés** : validations séparées pour le commit et le push ; jamais `git add -A` ni `git add .` ; alerte sur les fichiers sensibles ; jamais `--amend`, `--no-verify`, `--force`, `--force-with-lease`, `-f` ; pas de push si la branche locale est en retard ; vérification du remote, de l'URL et de la nouvelle branche distante avant push ; `git status` après chaque action.
 - **Frontmatter prévu** : `disable-model-invocation: true` ; `allowed-tools` limité aux commandes git en lecture (`status`, `diff`, `log`, `branch`, `remote`, `fetch`) ; `add`, `commit` et `push` ne sont volontairement **pas** pré-approuvés, afin que le mécanisme de permissions ajoute un troisième filet.
 - **Invocation** : manuelle uniquement. Un commit ou un push ne doit jamais partir sans demande explicite.
@@ -63,8 +59,7 @@ Principes de conception :
 ### 3.4 Skill `finish-web`
 
 - **Rôle** : passe de finition d'un projet web, enchaînant audit, critique, validation, polish et diagnostic final avec le plugin Impeccable.
-- **Source** : prototype interne `finaliser.md` (8 étapes).
-- **Retiré** : la vérification « pas à la racine de l'espace personnel » est remplacée par la vérification que le plugin **Impeccable est installé** ; sinon, le skill explique l'installation et s'arrête. Toute référence à des dossiers ou projets propres à un utilisateur disparaît.
+- **Prérequis** : le plugin **Impeccable** doit être installé ; sinon, le skill explique l'installation et s'arrête.
 - **Enchaînement conservé** : (1) vérif Impeccable, (2) cible, (3) audit, (4) critique, (5) synthèse et validation explicite, (6) polish (P0 d'abord, plafond de passes d'Impeccable respecté), (7) diagnostic final (sévérité auto appliquée, mention signalée, route jamais sans validation), (8) récapitulatif avant/après puis **proposition** de commit, sans commit automatique.
 - **Dépendance** : Impeccable est requis et documenté comme tel dans le README. Pas de version dégradée sans lui en v1.
 - **Invocation** : manuelle uniquement (`disable-model-invocation: true`). Workflow long et modifiant le code.
@@ -72,8 +67,7 @@ Principes de conception :
 ### 3.5 Agent `project-manager`
 
 - **Rôle** : relire, dans un contexte neuf et sans interaction, la fiche de cadrage et le PLAN.md produits par `new-project`, et renvoyer une liste de défauts (aucune réécriture).
-- **Source** : prototype interne `chef-de-projet.md` (agent). Ses règles d'interview migrent dans `skills/new-project/interview.md` ; l'agent ne garde que la logique de contrôle qualité.
-- **Retiré** : toute forme d'interview (`AskUserQuestion` n'est pas disponible aux sous-agents), la sortie « fiche 4 sections », et toute mention de projets ou d'outils propres à un utilisateur.
+- **Ce qu'il ne fait pas** : aucune interview (`AskUserQuestion` n'est pas disponible aux sous-agents) ; les règles d'interview vivent dans `skills/new-project/interview.md`.
 - **Contrôles** : critères de succès mesurables ; pas de stack dans le cadrage ; hors périmètre présent ; chaque étape a objectif, fichiers, destination, fait quand vérifiable ; étapes de taille raisonnable ; étape 0 Git présente si dépôt dédié ; cohérence du contrat (§5).
 - **Frontmatter prévu** : `name`, `description` courte (elle est chargée à chaque session), `tools: Read`, `model: sonnet`, `maxTurns` bas. Les champs ignorés pour les agents de plugin (`permissionMode`, `hooks`, `mcpServers`) ne sont pas utilisés.
 - **Invocation** : par le modèle (c'est le principe d'un agent). `new-project` l'appelle explicitement en fin de cadrage. Si l'appel échoue, `new-project` fait la revue lui-même avec la même grille.
@@ -81,8 +75,7 @@ Principes de conception :
 ### 3.6 Hook `check-secrets` (différé)
 
 - **Rôle** : après chaque Write ou Edit, signaler une clé ou un mot de passe écrit dans un fichier, sans jamais afficher la valeur.
-- **Source** : prototype interne `check-secrets.js` (hook PostToolUse, Node, lit `tool_input.file_path` sur stdin, sort en silence en cas d'erreur, exempte `.env`, sortie `decision:block` avec le type de secret, exit 0).
-- **Retiré à la généricisation** : les 3 motifs propres à un projet précis, remplacés par des motifs génériques (préfixes `sk-`, `AKIA`, `ghp_`, JWT, blocs de clé PEM...).
+- **Motifs** : génériques (préfixes `sk-`, `AKIA`, `ghp_`, JWT, blocs de clé PEM...).
 - **Invocation** : automatique (via `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}`).
 - **Décision proposée** : **hors v1.0.0**, repris en v1.1 (l'étape 7 du PLAN.md devient une étape de la v1.1). Raisons : le `commit` alerte déjà sur les fichiers sensibles ; Node n'est pas garanti chez l'utilisateur et le hook échouerait en silence ; un faux positif bloquant en démo est un risque ; la v1 doit être testable avant le 14/10.
 - Le hook de « Vérification automatique » du PLAN.md (JSON valide) reste un outil de développement dans `.claude/settings.json` du dépôt : il n'est pas livré dans le plugin.
@@ -120,7 +113,7 @@ Le contenu est rédigé dans la langue de l'utilisateur ; `run-step` lit le fich
 
 ## 7. Décision sur la question du sous-agent
 
-Constat : un sous-agent lancé via le tool Agent n'a pas accès à `AskUserQuestion`. L'ancien agent d'interview s'arrêtait donc après sa première question sans que l'utilisateur la reçoive.
+Constat : un sous-agent lancé via le tool Agent n'a pas accès à `AskUserQuestion`. Un agent chargé de mener l'interview s'arrêterait donc après sa première question, sans que l'utilisateur la reçoive.
 
 Décision :
 
@@ -201,7 +194,7 @@ lancement-projet/
 4. **Évals de `new-project`** : interactif, donc le `prompt.md` doit pré-répondre à toutes les questions ; les contrôles portent sur `file_exists` et sur les sections du PLAN.md.
 5. **Références entre skills** : un skill manuel ne peut pas en appeler un autre ; les enchaînements (`run-step` vers `commit`, `finish-web` vers `commit`) sont des suggestions, jamais des appels.
 6. **Fichiers d'appui des skills** (`interview.md`, `plan-template.md`) : vérifier à l'étape 4 le mécanisme de chemin relatif (variable de type `${CLAUDE_SKILL_DIR}`).
-7. **Lecture des sources hors dossier** : les chemins vers les prototypes du mainteneur ne doivent pas figurer dans `.claude/settings.json` (committé, public) ; les autorisations éventuelles vont dans `.claude/settings.local.json` (gitignoré).
+7. **Chemins locaux** : aucun chemin propre à la machine du mainteneur ne doit figurer dans `.claude/settings.json` (committé, public) ; les autorisations éventuelles vont dans `.claude/settings.local.json` (gitignoré).
 
 ## 12. Validation attendue
 
