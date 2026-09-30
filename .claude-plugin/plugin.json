@@ -1,0 +1,13 @@
+{
+  "name": "lancement-projet",
+  "version": "0.1.0",
+  "description": "A repeatable project method for Claude Code: guided scoping, a step-by-step PLAN.md, safe commits, and a web finishing pass.",
+  "author": {
+    "name": "VictorGrbz",
+    "url": "https://github.com/VictorGrbz"
+  },
+  "homepage": "https://github.com/VictorGrbz/lancement-projet",
+  "repository": "https://github.com/VictorGrbz/lancement-projet",
+  "license": "MIT",
+  "keywords": ["workflow", "planning", "git", "commit", "project-management"]
+}

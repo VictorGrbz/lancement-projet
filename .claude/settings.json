@@ -1,4 +1,17 @@
 {
   "model": "sonnet",
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');for(const f of ['.claude-plugin/plugin.json','.claude-plugin/marketplace.json','hooks/hooks.json']){if(!fs.existsSync(f))continue;try{JSON.parse(fs.readFileSync(f,'utf8'))}catch(e){console.error('Invalid JSON in '+f+': '+e.message);process.exit(2)}}\""
+          }
+        ]
+      }
+    ]
+  }
 }
