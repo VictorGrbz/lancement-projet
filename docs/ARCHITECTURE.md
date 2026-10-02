@@ -146,9 +146,11 @@ Décision :
 - **Installation en 2 commandes** (à reproduire mot pour mot dans le README) :
 
 ```
-/plugin marketplace add VictorGrbz/lancement-projet
+/plugin marketplace add https://github.com/VictorGrbz/lancement-projet.git
 /plugin install lancement-projet@victorgrbz-plugins
 ```
+
+La forme courte `VictorGrbz/lancement-projet` passe par SSH et échoue sur un poste dont `known_hosts` ne contient pas encore GitHub (« Host key verification failed »). L'URL HTTPS fonctionne sans configuration préalable, pour un dépôt public.
 
 - Prérequis documentés : Git, et pour `finish-web` le plugin Impeccable.
 
@@ -174,11 +176,13 @@ lancement-projet/
 ├── agents/
 │   └── project-manager.md
 ├── hooks/                       # absent en v1.0.0 (hook anti-secrets prévu en v1.1)
-├── evals/
-│   ├── commit-two-validations/  # prompt.md + graders/*.md
-│   ├── commit-behind-branch/
+├── evals/                       # un dossier par cas : prompt.md + graders/*.md (+ fixture.sh)
 │   ├── new-project-produces-plan/
-│   └── run-step-one-at-a-time/
+│   ├── run-step-one-at-a-time/
+│   ├── run-step-stops-at-stop-line/
+│   ├── finish-web-requires-impeccable/
+│   ├── commit-two-validations/  # exige un Bash isolé : Linux, macOS ou WSL2
+│   └── commit-behind-branch/    # idem
 ├── docs/
 │   └── ARCHITECTURE.md          # ce document
 ├── .claude/
