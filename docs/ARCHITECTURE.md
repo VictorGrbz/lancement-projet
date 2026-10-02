@@ -38,14 +38,15 @@ Principes de conception :
   - PLAN.md conforme au contrat du §5 (Cadrage produit, étapes avec objectif / fichiers / destination / fait quand, étape 0 d'init Git si dépôt dédié, section Vérification automatique avec hook PostToolUse proposé) ;
   - revue de cadrage (par l'agent `project-manager`) avant validation ;
   - si un PLAN.md existe déjà, présenter les modifications au lieu de l'écraser.
+- **CLAUDE.md de l'exécutant** : après le choix de la stack et avant l'écriture du plan, le skill crée un `CLAUDE.md` dans le dossier du projet à partir de `executor-claude-template.md`. Une session ouverte dans ce dossier n'hérite d'aucune autre consigne : ce fichier est son socle commun (une étape à la fois, jamais « fait » sans preuve, arrêts aux lignes `Stop`, règles Git). S'il existe déjà, rien n'est écrasé : le skill propose d'y ajouter une section « Executor rules » et n'écrit qu'après confirmation.
 - **Réglages du projet** : le `.claude/settings.json` du projet cible n'impose ni `model` ni `effortLevel` ; seul le hook de vérification est proposé, après validation. Aucun hébergement, stockage ni stack par défaut.
-- **Fichiers d'appui** : `interview.md` (interview en 4 sections : vision, 2 à 3 cas d'usage en histoires courtes, critères de succès mesurables avec refus du non vérifiable, hors périmètre avec 2 à 3 exclusions proposées ; relance sur le vague ; mode brouillon ; jamais de stack pendant l'interview) et `plan-template.md` (contrat du PLAN.md).
+- **Fichiers d'appui** : `interview.md` (interview en 5 points : vision, 2 à 3 cas d'usage en histoires courtes, critères de succès mesurables avec refus du non vérifiable, hors périmètre avec 2 à 3 exclusions proposées, ce qui peut mal tourner avec chaque risque et sa parade ; un point à la fois ; 2 ou 3 options avec pour et contre quand une réponse ouvre plusieurs voies ; fiche validée section par section ; relance sur le vague ; mode brouillon ; jamais de stack pendant l'interview), `plan-template.md` (contrat du PLAN.md) et `executor-claude-template.md` (modèle du CLAUDE.md de l'exécutant).
 - **Invocation** : manuelle uniquement (`disable-model-invocation: true`). Il écrit des fichiers, effectue des recherches web et pose de nombreuses questions : il ne doit jamais partir sur une phrase anodine.
 
 ### 3.2 Skill `run-step`
 
 - **Rôle** : lire le PLAN.md, prendre la première étape non faite, l'exécuter, vérifier son critère de « fait », la marquer comme faite, puis proposer un commit.
-- **Règles** : une seule étape par appel ; si le critère de fait n'est pas vérifiable, arrêt et question ; jamais d'enchaînement sur l'étape suivante sans validation ; ne modifie que le PLAN.md (statut) et les fichiers de l'étape ; termine en **suggérant** `/lancement-projet:commit` (texte, pas d'appel : un skill manuel ne peut pas en lancer un autre).
+- **Règles** : une seule étape par appel ; si le critère de fait n'est pas vérifiable, arrêt et question ; arrêt obligatoire à chaque ligne `Stop` de l'étape, jusqu'au feu vert de l'utilisateur ; jamais d'enchaînement sur l'étape suivante sans validation ; ne modifie que le PLAN.md (statut) et les fichiers de l'étape ; le récapitulatif liste tout ce qui a été ajouté sans être demandé (ou dit « nothing added ») ; termine en **suggérant** `/lancement-projet:commit` (texte, pas d'appel : un skill manuel ne peut pas en lancer un autre).
 - **Invocation** : manuelle uniquement. Il modifie le projet ; un déclenchement sur une phrase du type « on en est où ? » serait dangereux.
 
 ### 3.3 Skill `commit`
@@ -58,9 +59,11 @@ Principes de conception :
 
 ### 3.4 Skill `finish-web`
 
-- **Rôle** : passe de finition d'un projet web, enchaînant audit, critique, validation, polish et diagnostic final avec le plugin Impeccable.
-- **Prérequis** : le plugin **Impeccable** doit être installé ; sinon, le skill explique l'installation et s'arrête.
-- **Enchaînement conservé** : (1) vérif Impeccable, (2) cible, (3) audit, (4) critique, (5) synthèse et validation explicite, (6) polish (P0 d'abord, plafond de passes d'Impeccable respecté), (7) diagnostic final (sévérité auto appliquée, mention signalée, route jamais sans validation), (8) récapitulatif avant/après puis **proposition** de commit, sans commit automatique.
+- **Rôle** : passe de finition d'un projet web, enchaînant audit, critique, relecture indépendante, validation, polish et diagnostic final avec le plugin Impeccable.
+- **Prérequis** : le plugin **Impeccable** doit être installé (version testée : 4.1.1) ; sinon, le skill explique l'installation et s'arrête.
+- **Enchaînement** : (1) vérif Impeccable, (2) cible, (3) audit, (4) critique, (5) relecture indépendante, (6) comptage des couleurs en dur, (7) synthèse et validation explicite, (8) polish (P0 d'abord, plafond de passes d'Impeccable respecté), (9) diagnostic final (sévérité auto appliquée, mention signalée, route jamais sans validation), (10) récapitulatif avant/après puis **proposition** de commit, sans commit automatique.
+- **Relecture indépendante** : un seul sous-agent `impeccable:impeccable-finish-reviewer`, en rapport seul, relit le build contre la direction du projet, les maquettes approuvées (`.impeccable/mocks/`) et le PLAN.md. Ce relecteur n'a pas de navigateur : il exige des captures `desktop.png` et `mobile.png` dans `.impeccable/review/`, faute de quoi il répond `recapture`. L'étape est donc **sautée proprement, en le disant**, si l'agent n'est pas disponible, s'il n'existe aucune maquette approuvée ou si les captures manquent. Sa conclusion (`ship`, `fix`, `rebuild`, `recapture`) est rapportée telle quelle.
+- **Comptage des couleurs** : le nombre de valeurs de couleur écrites en dur dans le code (hors fichier de tokens ou de thème) est compté avant et après les corrections, avec la même méthode, et donné au récapitulatif.
 - **Dépendance** : Impeccable est requis et documenté comme tel dans le README. Pas de version dégradée sans lui en v1.
 - **Invocation** : manuelle uniquement (`disable-model-invocation: true`). Workflow long et modifiant le code.
 
@@ -68,7 +71,7 @@ Principes de conception :
 
 - **Rôle** : relire, dans un contexte neuf et sans interaction, la fiche de cadrage et le PLAN.md produits par `new-project`, et renvoyer une liste de défauts (aucune réécriture).
 - **Ce qu'il ne fait pas** : aucune interview (`AskUserQuestion` n'est pas disponible aux sous-agents) ; les règles d'interview vivent dans `skills/new-project/interview.md`.
-- **Contrôles** : critères de succès mesurables ; pas de stack dans le cadrage ; hors périmètre présent ; chaque étape a objectif, fichiers, destination, fait quand vérifiable ; étapes de taille raisonnable ; étape 0 Git présente si dépôt dédié ; cohérence du contrat (§5).
+- **Contrôles** : cadrage en cinq sections (dont les risques, chacun avec sa parade) ; critères de succès mesurables ; pas de stack dans le cadrage (un service externe peut être nommé comme dépendance dans un risque) ; hors périmètre présent ; chaque étape a objectif, fichiers, destination, fait quand vérifiable ; étapes de taille raisonnable ; lignes `Stop` aux bons endroits (ni oubliées, ni superflues) ; `CLAUDE.md` présent à côté du PLAN.md, sinon une étape du plan le crée ; étape 0 Git présente si dépôt dédié ; cohérence du contrat (§5).
 - **Frontmatter prévu** : `name`, `description` courte (elle est chargée à chaque session), `tools: Read`, `model: sonnet`, `maxTurns` bas. Les champs ignorés pour les agents de plugin (`permissionMode`, `hooks`, `mcpServers`) ne sont pas utilisés.
 - **Invocation** : par le modèle (c'est le principe d'un agent). `new-project` l'appelle explicitement en fin de cadrage. Si l'appel échoue, `new-project` fait la revue lui-même avec la même grille.
 
@@ -97,9 +100,9 @@ Les descriptions restent courtes et précises, y compris pour les skills manuels
 `new-project` écrit ce format, `project-manager` le contrôle, `run-step` le lit. Il est défini dans `skills/new-project/plan-template.md` et ne doit plus changer sans mettre à jour les trois composants.
 
 - Titre et description en une phrase.
-- **Cadrage produit** : vision, cas d'usage, critères de succès mesurables, hors périmètre.
-- **Contexte pour l'exécutant** : stack retenue, documentation de référence, contraintes.
-- **Étapes** numérotées. Chaque étape contient : objectif, fichiers, destination, fait quand, et une ligne `Status: todo` ou `Status: done`. L'étape 0 (initialisation Git) est présente si un dépôt dédié est demandé.
+- **Cadrage produit** : vision, cas d'usage, critères de succès mesurables, hors périmètre, risques.
+- **Contexte pour l'exécutant** : stack retenue, documentation de référence, contraintes, règles Git, fichiers privés, renvoi vers le `CLAUDE.md` du projet pour les règles générales.
+- **Étapes** numérotées. Chaque étape contient : objectif, fichiers, destination, fait quand, et une ligne `Status: todo` ou `Status: done`. Deux lignes facultatives peuvent s'y ajouter : `Note` (par exemple suggérer des sous-agents Explore et Plan) et `Stop` (le moment où l'exécutant s'arrête et attend la validation de l'utilisateur). Tout moment où une décision de l'utilisateur est requise (avant des corrections issues d'un rapport, après la lecture d'un document fourni) reçoit une ligne `Stop`, car une simple consigne « demande » n'est pas tenue de façon fiable. L'étape 0 (initialisation Git) est présente si un dépôt dédié est demandé.
 - **Vérification automatique** : hook PostToolUse proposé, jamais installé sans validation.
 
 Le contenu est rédigé dans la langue de l'utilisateur ; `run-step` lit le fichier par sens et ne dépend pas d'un analyseur strict, mais la ligne `Status` reste en anglais pour rester repérable.
@@ -134,6 +137,7 @@ Décision :
 | Langue des commits | celle des commits existants (~10 derniers) ; dépôt vide ou mixte : anglais | toujours anglais | le message reste cohérent avec l'historique du projet |
 | Hook | différé à la v1.1 | garder en v1 | voir §3.6 |
 | Marketplace | nom distinct `victorgrbz-plugins` | même nom que le plugin | voir §9 |
+| Direction artistique et animation | reportées en v2 (option possible dans le même catalogue) | les inclure dans `new-project` | trop spécifiques pour une v1 : elles supposent un outil de maquettes externe et un workflow d'animation dédié |
 
 ## 9. Distribution
 
@@ -158,8 +162,9 @@ lancement-projet/
 ├── skills/
 │   ├── new-project/
 │   │   ├── SKILL.md
-│   │   ├── interview.md         # interview en 4 sections
-│   │   └── plan-template.md     # contrat du PLAN.md
+│   │   ├── interview.md         # interview en 5 points
+│   │   ├── plan-template.md     # contrat du PLAN.md
+│   │   └── executor-claude-template.md  # modèle du CLAUDE.md de l'exécutant
 │   ├── run-step/
 │   │   └── SKILL.md
 │   ├── commit/
@@ -175,11 +180,9 @@ lancement-projet/
 │   ├── new-project-produces-plan/
 │   └── run-step-one-at-a-time/
 ├── docs/
-│   ├── ARCHITECTURE.md          # ce document
-│   └── DEMO.md                  # scénario de démonstration (étape 10)
+│   └── ARCHITECTURE.md          # ce document
 ├── .claude/
 │   └── settings.json            # outillage de développement du dépôt, non livré dans le plugin
-├── PLAN.md                      # document de travail (voir risque de confidentialité)
 ├── README.md                    # anglais
 ├── README.fr.md                 # français
 ├── LICENSE                      # MIT
@@ -188,13 +191,12 @@ lancement-projet/
 
 ## 11. Risques et points ouverts (à traiter dans les étapes concernées)
 
-1. **Données personnelles dans l'historique public** : le PLAN.md du commit initial contient des éléments propres au mainteneur. À trancher avant l'étape 11 : sortir le PLAN.md du suivi et réécrire l'historique, ou l'exclure explicitement du contrôle.
-2. **Impeccable** (traité à l'étape 6) : `finish-web` détecte le plugin par la disponibilité du skill `impeccable:impeccable` dans la session et s'arrête avec le message d'installation s'il est absent. Il l'invoque avec l'outil Skill (`audit`, `critique`, `polish`, `doctor`), ce qui fonctionne depuis un skill manuel. Installation : `/plugin marketplace add pbakaus/impeccable` puis `/plugin install impeccable@impeccable`. Pas de `dependencies` dans `plugin.json` : une dépendance vers un autre catalogue est refusée sans liste d'autorisation dans le catalogue racine, et elle imposerait Impeccable à tous les utilisateurs, y compris ceux qui n'utilisent que `commit`. Version testée : 4.1.1, à rappeler dans le README (les sous-commandes peuvent évoluer).
-3. **`disallowed-tools`** : vérifier à l'étape 3 que les motifs interdisant `--force`, `--amend`, `--no-verify` sont acceptés ; sinon, les règles restent dans le texte du skill seul.
-4. **Évals de `new-project`** : interactif, donc le `prompt.md` doit pré-répondre à toutes les questions ; les contrôles portent sur `file_exists` et sur les sections du PLAN.md.
-5. **Références entre skills** : un skill manuel ne peut pas en appeler un autre ; les enchaînements (`run-step` vers `commit`, `finish-web` vers `commit`) sont des suggestions, jamais des appels.
-6. **Fichiers d'appui des skills** (`interview.md`, `plan-template.md`) : vérifier à l'étape 4 le mécanisme de chemin relatif (variable de type `${CLAUDE_SKILL_DIR}`).
-7. **Chemins locaux** : aucun chemin propre à la machine du mainteneur ne doit figurer dans `.claude/settings.json` (committé, public) ; les autorisations éventuelles vont dans `.claude/settings.local.json` (gitignoré).
+1. **Impeccable** (traité à l'étape 6) : `finish-web` détecte le plugin par la disponibilité du skill `impeccable:impeccable` dans la session et s'arrête avec le message d'installation s'il est absent. Il l'invoque avec l'outil Skill (`audit`, `critique`, `polish`, `doctor`), ce qui fonctionne depuis un skill manuel. Installation : `/plugin marketplace add pbakaus/impeccable` puis `/plugin install impeccable@impeccable`. Pas de `dependencies` dans `plugin.json` : une dépendance vers un autre catalogue est refusée sans liste d'autorisation dans le catalogue racine, et elle imposerait Impeccable à tous les utilisateurs, y compris ceux qui n'utilisent que `commit`. Version testée : 4.1.1, à rappeler dans le README (les sous-commandes peuvent évoluer).
+2. **`disallowed-tools`** : vérifier à l'étape 3 que les motifs interdisant `--force`, `--amend`, `--no-verify` sont acceptés ; sinon, les règles restent dans le texte du skill seul.
+3. **Évals de `new-project`** : interactif, donc le `prompt.md` doit pré-répondre à toutes les questions ; les contrôles portent sur `file_exists` et sur les sections du PLAN.md.
+4. **Références entre skills** : un skill manuel ne peut pas en appeler un autre ; les enchaînements (`run-step` vers `commit`, `finish-web` vers `commit`) sont des suggestions, jamais des appels.
+5. **Fichiers d'appui des skills** (`interview.md`, `plan-template.md`) : vérifier à l'étape 4 le mécanisme de chemin relatif (variable de type `${CLAUDE_SKILL_DIR}`).
+6. **Chemins locaux** : aucun chemin propre à la machine du mainteneur ne doit figurer dans `.claude/settings.json` (committé, public) ; les autorisations éventuelles vont dans `.claude/settings.local.json` (gitignoré).
 
 ## 12. Validation attendue
 

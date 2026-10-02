@@ -11,14 +11,14 @@ Run a guided project kickoff: scope the project with the user, pick a simple sta
 
 Talk to the user in the user's language. Ask questions with the `AskUserQuestion` tool when it fits (several questions per call), and always leave room for a free-text answer.
 
-You never write application or production code in this skill. You only write `PLAN.md` and light files (README, specs, `.gitignore`, project settings).
+You never write application or production code in this skill. You only write `PLAN.md`, the project's `CLAUDE.md` and light files (README, specs, `.gitignore`, project settings).
 
 Project name or brief given by the user: $ARGUMENTS
 
 ## 0. Existing material
 
 If the user points to existing documents (a brief, notes, a spec, a folder), read them fully first. From them, prepare:
-- a draft of the four scoping sections (vision, use cases, success criteria, out of scope);
+- a draft of the five scoping sections (vision, use cases, success criteria, out of scope, risks);
 - a draft of the answers to the constraint questions of step 2.
 
 If there is nothing, or the user says there is no brief, go straight to step 1.
@@ -62,19 +62,27 @@ Ask where the project lives. Never choose the path yourself. Create the folder i
 
 Do not impose a model or an effort level in the project's `.claude/settings.json`: those are personal choices. If the user wants the automatic check described in `plan-template.md`, add only the `hooks` key to that file (create it if needed, never touch other keys), and only after the user agrees. Commit this file with the project, never put it in `settings.local.json`.
 
-## 7. Write PLAN.md
+## 7. Executor CLAUDE.md
+
+The executor session opened in the project folder inherits no instructions from this one, so give it a common ground. Read `${CLAUDE_SKILL_DIR}/executor-claude-template.md` and create `CLAUDE.md` in the target folder from the block it contains, replacing the project name and the validated stack.
+
+If a `CLAUDE.md` already exists, never overwrite it. Show the user the section "Executor rules" you would add, and write it only after the user agrees.
+
+## 8. Write PLAN.md
 
 Read `${CLAUDE_SKILL_DIR}/plan-template.md` and write `PLAN.md` in the target folder, following that contract exactly. If a `PLAN.md` already exists, show the planned changes first and write only after the user agrees.
 
 Where a step is heavy on research or architecture, add a note suggesting the executor use Explore and Plan subagents for it.
 
-## 8. Review before validation
+Place a `Stop` line on every step where a decision of the user is needed: before fixes coming from a report (for example the "Finishing" step, where `/lancement-projet:finish-web` already waits for validation before correcting), and after the executor reads a document supplied by the user. A plain instruction to "ask" is not reliably followed, a `Stop` line is.
+
+## 9. Review before validation
 
 Before showing the plan, get a second look: call the `project-manager` agent (`lancement-projet:project-manager`) and give it the path of the `PLAN.md` and the path `${CLAUDE_SKILL_DIR}/plan-template.md`. It reads the plan and returns a list of defects; it never rewrites and never asks questions. If the agent is unavailable or fails, run the same checks yourself using the checklist in `plan-template.md`.
 
 Fix or report every defect. Then present the plan to the user and ask for validation. Do not present a plan that is missing a scoping section or a "Done when" criterion.
 
-## 9. Closing
+## 10. Closing
 
 Remind the user to open a new session in the project folder and run `/lancement-projet:run-step` to execute the plan one step at a time. This session does not execute any step.
 
@@ -83,5 +91,5 @@ Remind the user to open a new session in the project folder and run `/lancement-
 - Never write application or production code.
 - Never run the interview in a subagent.
 - Never choose the repository name or the folder path yourself.
-- Never overwrite an existing `PLAN.md` without showing the changes first.
+- Never overwrite an existing `PLAN.md` or `CLAUDE.md` without showing the changes first.
 - Never touch `model` or `effortLevel` in a project's settings.

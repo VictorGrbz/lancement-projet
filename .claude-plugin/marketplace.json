@@ -10,7 +10,7 @@
       "name": "lancement-projet",
       "source": "./",
       "description": "A repeatable project method for Claude Code: guided scoping, a step-by-step PLAN.md, safe commits, and a web finishing pass.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "license": "MIT"
     }
   ]
