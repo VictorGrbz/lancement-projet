@@ -13,7 +13,7 @@ claude plugin eval . --tag new-project run-step finish-web --ablation none --tru
 - `--scaffold` runs each `fixture.sh`, which builds the workspace of the case. Only use it on suites you trust.
 - `--allow-tools Write Edit` lets the skills write files. Without it, the cases that create files fail.
 - `--ablation none` skips the no-plugin comparison and halves the cost. Drop it to see what the plugin adds.
-- Expect about 2 USD of model calls and 2 to 3 minutes.
+- Expect about 11 agent runs and 2 to 3 minutes. The report shows a cost of about 2 USD at list price; on a subscription this counts against your plan's usage instead of billing you.
 
 ## The two `commit` cases
 
